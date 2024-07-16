@@ -1,0 +1,29 @@
+{
+  "name": "flockollamaworker",
+  "version": "1.0.0",
+  "description": "Simple worker for FlockOllamas to retrieve and process Ollama requests",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha --exit"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dickdann/FlockOllamaWorker.git"
+  },
+  "keywords": [
+    "Ollama",
+    "flock",
+    "Worker"
+  ],
+  "author": "Devart",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/dickdann/FlockOllamaWorker/issues"
+  },
+  "homepage": "https://github.com/dickdann/FlockOllamaWorker#readme",
+  "dependencies": {
+    "axios": "^1.7.2",
+    "dotenv": "^16.4.5",
+    "memory-cache": "^0.2.0"
+  }
+}
