@@ -22,7 +22,7 @@ async function main(){
         catch(error){
             console.error('Error processing request:', error);
             // try again in 10 seconds
-            await worker.sleep(10000);
+            await worker.sleep(3000);
         }        
     }
 }

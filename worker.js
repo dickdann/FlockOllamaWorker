@@ -8,7 +8,7 @@ async function getOllamaModels(){
 
     if (!models) {    
         try {
-            const response = await axios.get(ollamaUrl + '/v1/models');        
+            const response = await axios.get(ollamaUrl + '/api/tags');        
             models = response.data;
             mcache.put('models', models, 1000 * 60 * 60); // Cache for 1 hour            
         } catch (error) {
@@ -35,16 +35,15 @@ exports.processRequest = async () => {
   let tokens = 0;
   let response = null;
   try {
-    let request = {models: models};    
+    let request =  {models:models.models};    
     response = await axios.post(serverUrl + '/api/pull', request, {
       headers: { 'Authorization': `Bearer ${ollamaApiKey}` },
     });
 
-    if (response.data.error) {
+    if (!response || !response.data || response.data.error) {
         console.error('Error processing request:', response.data.error);        
     }
     else if (response.data.job) {
-        console.log('Request found');
         let path = request.data.path;
         let request = request.data.request;
         // turn off streaming for now!
@@ -67,6 +66,7 @@ exports.processRequest = async () => {
     
   } catch (error) {
     console.error('Error processing request:', error);
+    return {success:false, sleep:3000, tokens:0};
   }
   return {success:success, sleep:response.data.sleep || 0, tokens:tokens};
 }
