@@ -26,6 +26,15 @@ exports.sleep = async (ms) =>{
   });
 }
 
+var globalKey = null;
+// generate a unique reference for this worker
+function getReference(){
+  if (!globalKey){
+    globalKey = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+  }
+  return globalKey;
+}
+
 exports.processRequest = async () => {
   const serverUrl = process.env.SERVER_URL;
   const ollamaUrl = process.env.OLLAMA_URL;
@@ -35,7 +44,7 @@ exports.processRequest = async () => {
   let tokens = 0;
   let response = null;
   try {
-    let request =  {models:models.models};    
+    let request =  {models:models.models, reference:getReference()};    
     response = await axios.post(serverUrl + '/api/pull', request, {
       headers: { 'Authorization': `Bearer ${ollamaApiKey}` },
     });
