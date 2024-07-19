@@ -1,4 +1,5 @@
 const axios = require('axios');
+const http = require('http');
 const mcache = require('memory-cache');
 require('dotenv').config();
 
@@ -35,6 +36,17 @@ function getReference(){
   return globalKey;
 }
 
+// fix up any fields that have lost their type in transit
+function fixRequest(request){
+  if (request.stream){
+    // test if stream is a string
+    if (typeof request.stream === 'string' || request.stream instanceof String){
+      request.stream = request.stream=="true";
+    }
+  }
+
+  return request;
+}
 exports.processRequest = async () => {
   const serverUrl = process.env.SERVER_URL;
   const ollamaUrl = process.env.OLLAMA_URL;
@@ -53,21 +65,51 @@ exports.processRequest = async () => {
         console.error('Error processing request:', response.data.error);        
     }
     else if (response.data.job) {
-        let path = request.data.path;
-        let request = request.data.request;
-        // turn off streaming for now!
-        request.data.request.stream = false;
+        let path = response.data.path;
+        let request = response.data.request;  
+        let id = response.data.id;      
 
-        let response = await axios.post(ollamaUrl + path, request);
-        console.log('Successfully processed request.');
+        request = fixRequest(request);
+        console.log("Got some work using model: " + request.model);
+
+        let ollamaResponse = await axios.post(ollamaUrl + path, request, config);
+
+        let pushData = {id:id, response:ollamaResponse.data};
 
         // post the response back to the server
-        let pushResponse = await axios.post(serverUrl + '/api/push', response.data, {
-          headers: { 'Authorization': `Bearer ${ollamaApiKey}` },
+        let targetRequest = await axios.post(serverUrl + '/api/push', pushData, {
+          headers: { 
+            'Authorization': `Bearer ${ollamaApiKey}` },
+          responseType:'stream'
         });
-        success = true;
-        tokens = pushResponse.data.tokens;
-        console.log('Successfully pushed response back to server.  Earnings: ' + tokens);
+
+        ollamaResponse.data.on('data', (chunk) => {
+          // Send each chunk of data to the target server
+          targetRequest.then((targetResponse) => {
+            if (targetResponse.status !== 200) {
+              console.error(`Error streaming to target server: ${targetResponse.statusText}`);
+            } else {
+              targetRequest.response.write(chunk); // Write the chunk to the target request stream
+            }
+          }).catch((error) => {
+            console.error(`Error sending data to target server: ${error}`);
+          });
+        });
+    
+        response.data.on('end', () => {
+          console.log('Ollama data streamed successfully.');
+          targetRequest.then((targetResponse) => {
+            targetRequest.data.end(); // Close the target stream after Ollama data ends
+          }).catch((error) => {
+            console.error(`Error finalizing target stream: ${error}`);
+          });
+        });
+    
+        response.data.on('error', (error) => {
+          console.error(`Error streaming Ollama data: ${error}`);
+          targetRequest.cancel(); // Cancel the target request on Ollama data stream error
+        });
+                  
     }
     else{
       console.log("Yawn...");      
