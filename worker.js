@@ -1,9 +1,10 @@
 const axios = require('axios');
 const http = require('http');
+const https = require('https');
 const mcache = require('memory-cache');
 const { hostname } = require('os');
 require('dotenv').config();
-var running = false;
+var _running = false;
 
 
 async function getOllamaModels(){
@@ -52,24 +53,25 @@ function fixRequest(request, path){
 }
 
 exports.isRunning = () => {
-  return running;
+  return _running;
 }
 
 exports.processRequest = async () => {
   const serverUrl = process.env.SERVER_URL;
   const ollamaUrl = process.env.OLLAMA_URL;
   const ollamaApiKey = process.env.FLOCKOLLAMA_PUBLIC_KEY;
+  let h = ollamaUrl.indexOf("https")>-1 ? https : http;
+
   let models = await getOllamaModels();
   let success = false;
   let tokens = 0;
   let response = null;
-  if (running){
-    console.log("Already running a job...");
+  if (_running){
+    console.log("Working...");
     return false;
   }
   
   try {
-    
     let request =  {models:models.models, reference:getReference()};    
     response = await axios.post(serverUrl + '/api/pull', request, {
       headers: { 'Authorization': `Bearer ${ollamaApiKey}` },
@@ -82,7 +84,7 @@ exports.processRequest = async () => {
         let path = response.data.path;
         let request = response.data.request;  
         let id = response.data.id;      
-        running = true;
+        _running = true;
         request = fixRequest(request, path);
         console.log("Got some work using model: " + request.model);
 
@@ -97,10 +99,10 @@ exports.processRequest = async () => {
         (ollamaResponse) => {                   
           if (ollamaResponse.statusCode !== 200) {
             console.error(`Request failed with status: ${ollamaResponse.statusCode}`);
-            running = false;
+            _running = false;
             return;
           }
-          const pushRequest = http.request(serverUrl + '/api/push', {
+          const pushRequest = h.request(serverUrl + '/api/push', {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${ollamaApiKey}`,
@@ -112,7 +114,7 @@ exports.processRequest = async () => {
             pushRequest.write(chunk);            
           });
           ollamaResponse.on('end', () => {
-            running = false;
+            _running = false;
             pushRequest.end();
           });
          pushRequest.on('error', (error) => {
@@ -134,9 +136,13 @@ exports.processRequest = async () => {
     }
     
   } catch (error) {
-    console.error('Error processing request:', error);
+    if (error.response && error.response.data){
+      console.log("Error processing request:", error.response.data);
+    }
+    else{
+      console.log("Error processing request:", error);
+    }
     return {success:false, sleep:3000, tokens:0};
-  }
-  
+  }  
 }
 
