@@ -4,6 +4,8 @@ const mcache = require('memory-cache');
 const { hostname } = require('os');
 require('dotenv').config();
 var running = false;
+
+
 async function getOllamaModels(){
     const ollamaUrl = process.env.OLLAMA_URL;
     let models = mcache.get('models');
