@@ -1,8 +1,9 @@
 const axios = require('axios');
 const http = require('http');
 const mcache = require('memory-cache');
+const { hostname } = require('os');
 require('dotenv').config();
-
+var running = false;
 async function getOllamaModels(){
     const ollamaUrl = process.env.OLLAMA_URL;
     let models = mcache.get('models');
@@ -37,16 +38,21 @@ function getReference(){
 }
 
 // fix up any fields that have lost their type in transit
-function fixRequest(request){
+function fixRequest(request, path){
   if (request.stream){
     // test if stream is a string
     if (typeof request.stream === 'string' || request.stream instanceof String){
       request.stream = request.stream=="true";
     }
   }
-
+  
   return request;
 }
+
+exports.isRunning = () => {
+  return running;
+}
+
 exports.processRequest = async () => {
   const serverUrl = process.env.SERVER_URL;
   const ollamaUrl = process.env.OLLAMA_URL;
@@ -55,7 +61,13 @@ exports.processRequest = async () => {
   let success = false;
   let tokens = 0;
   let response = null;
+  if (running){
+    console.log("Already running a job...");
+    return false;
+  }
+  
   try {
+    
     let request =  {models:models.models, reference:getReference()};    
     response = await axios.post(serverUrl + '/api/pull', request, {
       headers: { 'Authorization': `Bearer ${ollamaApiKey}` },
@@ -68,57 +80,61 @@ exports.processRequest = async () => {
         let path = response.data.path;
         let request = response.data.request;  
         let id = response.data.id;      
-
-        request = fixRequest(request);
+        running = true;
+        request = fixRequest(request, path);
         console.log("Got some work using model: " + request.model);
 
-        let ollamaResponse = await axios.post(ollamaUrl + path, request, config);
-
-        let pushData = {id:id, response:ollamaResponse.data};
-
-        // post the response back to the server
-        let targetRequest = await axios.post(serverUrl + '/api/push', pushData, {
-          headers: { 
-            'Authorization': `Bearer ${ollamaApiKey}` },
-          responseType:'stream'
-        });
-
-        ollamaResponse.data.on('data', (chunk) => {
-          // Send each chunk of data to the target server
-          targetRequest.then((targetResponse) => {
-            if (targetResponse.status !== 200) {
-              console.error(`Error streaming to target server: ${targetResponse.statusText}`);
-            } else {
-              targetRequest.response.write(chunk); // Write the chunk to the target request stream
+        
+        let ollamaRequest = http.request(ollamaUrl,{
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/octet-stream',          
+          },
+          path: path
+        },
+        (ollamaResponse) => {                   
+          if (ollamaResponse.statusCode !== 200) {
+            console.error(`Request failed with status: ${ollamaResponse.statusCode}`);
+            running = false;
+            return;
+          }
+          const pushRequest = http.request(serverUrl + '/api/push', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${ollamaApiKey}`,
+              'Content-Type': 'application/octet-stream',
+              'id':id
             }
-          }).catch((error) => {
-            console.error(`Error sending data to target server: ${error}`);
+          });
+          ollamaResponse.on('data', (chunk) => {
+            pushRequest.write(chunk);            
+          });
+          ollamaResponse.on('end', () => {
+            running = false;
+            pushRequest.end();
+          });
+         pushRequest.on('error', (error) => {
+            console.error(`problem with request: ${error.message}`);
           });
         });
-    
-        response.data.on('end', () => {
-          console.log('Ollama data streamed successfully.');
-          targetRequest.then((targetResponse) => {
-            targetRequest.data.end(); // Close the target stream after Ollama data ends
-          }).catch((error) => {
-            console.error(`Error finalizing target stream: ${error}`);
-          });
+
+        ollamaRequest.on('error', (error) => {
+          console.error(`problem with request: ${error.message}`);
         });
-    
-        response.data.on('error', (error) => {
-          console.error(`Error streaming Ollama data: ${error}`);
-          targetRequest.cancel(); // Cancel the target request on Ollama data stream error
-        });
+
+        ollamaRequest.write(JSON.stringify(request));
+        ollamaRequest.end();
                   
     }
     else{
       console.log("Yawn...");      
+      return {success:false, sleep:3000, tokens:0};
     }
     
   } catch (error) {
     console.error('Error processing request:', error);
     return {success:false, sleep:3000, tokens:0};
   }
-  return {success:success, sleep:response.data.sleep || 0, tokens:tokens};
+  
 }
 

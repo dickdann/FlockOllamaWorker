@@ -11,12 +11,18 @@ process.on('SIGINT', () => {
 async function main(){
     while (true) {
         try{
+            
             let request = await worker.processRequest();
-            if (request.success){
-                console.log('Successfully processed request.  Earnings: ' + request.tokens);        
+            if (request){
+                if (request.success){
+                    console.log('Successfully processed request.  Earnings: ' + request.tokens);        
+                }
+                if (request.sleep > 0){
+                    await worker.sleep(request.sleep);
+                }
             }
-            if (request.sleep > 0){
-                await worker.sleep(request.sleep);
+            else{                
+                await worker.sleep(3000);            
             }
         }
         catch(error){
