@@ -62,7 +62,7 @@ exports.processRequest = async () => {
   const serverUrl = process.env.SERVER_URL;
   const ollamaUrl = process.env.OLLAMA_URL;
   const ollamaApiKey = process.env.FLOCKOLLAMA_PUBLIC_KEY;
-  let h = ollamaUrl.indexOf("https")>-1 ? https : http;
+  let h = ollamaUrl.indexOf("https")>-1 ? http : http;
 
   let models = await getOllamaModels();
   let success = false;
