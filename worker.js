@@ -4,7 +4,7 @@ const https = require('https');
 const mcache = require('memory-cache');
 const { hostname } = require('os');
 require('dotenv').config();
-var _running = false;
+var _running = 0;
 
 
 async function getOllamaModels(){
@@ -56,6 +56,8 @@ exports.isRunning = () => {
   return _running;
 }
 
+var working = false;
+var yawning = false;
 exports.processRequest = async () => {
   const serverUrl = process.env.SERVER_URL;
   const ollamaUrl = process.env.OLLAMA_URL;
@@ -66,10 +68,18 @@ exports.processRequest = async () => {
   let success = false;
   let tokens = 0;
   let response = null;
-  if (_running){
-    console.log("Working...");
+  let threads = process.env.THREADS || 1;
+  if (_running >= threads){
+    if (working){
+      process.stdout.write(".");
+    }
+    else{
+      process.stdout.write("Working at max capacity");
+      working = true;
+    }
     return false;
   }
+  working = false;
   
   try {
     let request =  {models:models.models, reference:getReference()};    
@@ -81,13 +91,14 @@ exports.processRequest = async () => {
         console.error('Error processing request:', response.data.error);        
     }
     else if (response.data.job) {
+        yawning = false;
+        process.stdout.write("\n");
         let path = response.data.path;
         let request = response.data.request;  
         let id = response.data.id;      
-        _running = true;
+        _running++;
         request = fixRequest(request, path);
-        console.log("Got some work using model: " + request.model);
-
+        console.log("Got some work, model: " + request.model);
         
         let ollamaRequest = http.request(ollamaUrl,{
           method: 'POST',
@@ -99,7 +110,7 @@ exports.processRequest = async () => {
         (ollamaResponse) => {                   
           if (ollamaResponse.statusCode !== 200) {
             console.error(`Request failed with status: ${ollamaResponse.statusCode}`);
-            _running = false;
+            _running--;
             return;
           }
           const pushRequest = h.request(serverUrl + '/api/push', {
@@ -114,7 +125,8 @@ exports.processRequest = async () => {
             pushRequest.write(chunk);            
           });
           ollamaResponse.on('end', () => {
-            _running = false;
+            _running--;
+            process.stdout.write(".Done\n");
             pushRequest.end();
           });
          pushRequest.on('error', (error) => {
@@ -131,7 +143,13 @@ exports.processRequest = async () => {
                   
     }
     else{
-      console.log("Yawn...");      
+      if (yawning){
+        process.stdout.write(".");
+      }
+      else{
+        process.stdout.write("Yawn");  
+        yawning = true;
+      }    
       return {success:false, sleep:3000, tokens:0};
     }
     
