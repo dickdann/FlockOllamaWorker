@@ -62,8 +62,8 @@ exports.processRequest = async () => {
   const serverUrl = process.env.SERVER_URL;
   const ollamaUrl = process.env.OLLAMA_URL;
   const ollamaApiKey = process.env.FLOCKOLLAMA_PUBLIC_KEY;
-  let h = ollamaUrl.indexOf("https")>-1 ? http : http;
-
+  let h = serverUrl.indexOf("https")>-1 ? https : http;
+  
   let models = await getOllamaModels();
   let success = false;
   let tokens = 0;
@@ -100,7 +100,7 @@ exports.processRequest = async () => {
         request = fixRequest(request, path);
         console.log("Got some work, model: " + request.model);
         
-        let ollamaRequest = h.request(ollamaUrl,{
+        let ollamaRequest = http.request(ollamaUrl,{
           method: 'POST',
           headers: {
             'Content-Type': 'application/octet-stream',          
