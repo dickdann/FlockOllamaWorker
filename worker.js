@@ -100,7 +100,7 @@ exports.processRequest = async () => {
         request = fixRequest(request, path);
         console.log("Got some work, model: " + request.model);
         
-        let ollamaRequest = http.request(ollamaUrl,{
+        let ollamaRequest = h.request(ollamaUrl,{
           method: 'POST',
           headers: {
             'Content-Type': 'application/octet-stream',          
