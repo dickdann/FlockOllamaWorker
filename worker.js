@@ -118,7 +118,8 @@ exports.processRequest = async () => {
             headers: {
               'Authorization': `Bearer ${ollamaApiKey}`,
               'Content-Type': 'application/octet-stream',
-              'id':id
+              'id':id,
+              'reference':getReference()
             }
           });
           ollamaResponse.on('data', (chunk) => {
