@@ -74,7 +74,7 @@ exports.processRequest = async () => {
       process.stdout.write(".");
     }
     else{
-      process.stdout.write("Working at max capacity");
+      process.stdout.write("Working at capacity");
       working = true;
     }
     return false;

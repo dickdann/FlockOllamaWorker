@@ -1,5 +1,5 @@
 console.log("Starting Ollama Worker");
-const worker = require('./worker');
+const worker = require('./src/worker');
 
 process.on('SIGINT', () => {
     console.log('Received Ctrl+C - shutting down');
