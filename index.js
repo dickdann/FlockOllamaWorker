@@ -8,7 +8,7 @@ process.on('SIGINT', () => {
   });
 
 
-async function main(){
+exports.run = async () => {
     while (true) {
         try{
             
@@ -34,7 +34,7 @@ async function main(){
 }
 
 // call main function
-main().catch(error =>{
+this.run().catch(error =>{
     console.error('Error running worker:', error);
     process.exit(1);
 })

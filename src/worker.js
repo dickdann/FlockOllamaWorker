@@ -7,7 +7,7 @@ require('dotenv').config();
 var _running = 0;
 
 
-async function getOllamaModels(){
+exports.getOllamaModels = async () =>{
     const ollamaUrl = process.env.OLLAMA_URL;
     let models = mcache.get('models');
 
@@ -64,7 +64,7 @@ exports.processRequest = async () => {
   const ollamaApiKey = process.env.FLOCKOLLAMA_PUBLIC_KEY;
   let h = serverUrl.indexOf("https")>-1 ? https : http;
   
-  let models = await getOllamaModels();
+  let models = await this.getOllamaModels();
   let success = false;
   let tokens = 0;
   let response = null;
