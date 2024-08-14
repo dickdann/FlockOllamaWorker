@@ -1,4 +1,4 @@
-const worker = require('flockollama-worker');
+const worker = require('flockollamas-worker');
 
 // call main function
 worker.run().catch(error =>{
