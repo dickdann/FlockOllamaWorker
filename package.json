@@ -1,12 +1,11 @@
 {
-  "name": "flockollama-worker",
-  "version": "1.0.1",
+  "name": "flockollamas-worker",
+  "version": "1.0.0",
   "description": "Simple worker for FlockOllamas to retrieve and process Ollama requests",
   "main": "index.js",
   "scripts": {
     "test": "mocha --exit",
     "start": "node index.js"
-    
   },
   "repository": {
     "type": "git",
@@ -27,12 +26,13 @@
     "axios": "^1.7.2",
     "chai": "^5.1.1",
     "dotenv": "^16.4.5",
+    "fs-extra": "^11.2.0",
     "memory-cache": "^0.2.0",
     "mocha": "^10.7.3",
+    "pm2": "^5.4.2",
     "supertest": "^7.0.0"
   },
   "directories": {
     "test": "test"
-  },
-  "devDependencies": {}
+  }
 }
