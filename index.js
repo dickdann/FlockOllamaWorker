@@ -26,7 +26,8 @@ exports.run = async () => {
             }
         }
         catch(error){
-            console.error('Error processing request:', error);
+            //console.error('Error processing request:', error);
+            console.log("Failed to connect to server.");
             // try again in 10 seconds
             await worker.sleep(3000);
         }        

@@ -155,12 +155,7 @@ exports.processRequest = async () => {
     }
     
   } catch (error) {
-    if (error.response && error.response.data){
-      console.log("Error processing request:", error.response.data);
-    }
-    else{
-      console.log("Error processing request:", error);
-    }
+      onsole.log("Error connecting:", error.code);
     return {success:false, sleep:3000, tokens:0};
   }  
 }
