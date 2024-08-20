@@ -105,11 +105,11 @@ exports.processRequest = async () => {
           headers: {
             'Content-Type': 'application/octet-stream',          
           },
-          path: path
+          path: path          
         },
         (ollamaResponse) => {                   
           if (ollamaResponse.statusCode !== 200) {
-            console.error(`Request failed with status: ${ollamaResponse.statusCode}`);
+            console.error(`Request failed with status: ${ollamaResponse.statusCode} ${ollamaResponse.statusMessage}`);
             _running--;
             return;
           }
@@ -138,7 +138,7 @@ exports.processRequest = async () => {
         ollamaRequest.on('error', (error) => {
           console.error(`problem with request: ${error.message}`);
         });
-
+        
         ollamaRequest.write(JSON.stringify(request));
         ollamaRequest.end();
                   
