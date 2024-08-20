@@ -1,8 +1,9 @@
 const fs = require('fs-extra');
 const path = require('path');
 
-const sourceDir = path.join(__dirname, '..', 'flockollamas-worker');
-const targetDir = process.cwd();
+// sourceDir is 2 dirs up from this file
+const sourceDir =  process.cwd();
+const targetDir = path.join(__dirname, '..', '..');
 console.log(`Running post install step.  TargetDirectory is ${targetDir} sourceDir is ${sourceDir}`);
 
 setTimeout(() => {

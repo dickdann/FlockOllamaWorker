@@ -1,12 +1,12 @@
 {
   "name": "flockollamas-worker",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Simple worker for FlockOllamas to retrieve and process Ollama requests",
   "main": "index.js",
   "scripts": {
     "test": "mocha --exit",
     "start": "node index.js",
-    "postinstall": "node ./node_modules/flockollamas-worker/install.js"
+    "postinstall": "node install.js"
   },
   "repository": {
     "type": "git",
