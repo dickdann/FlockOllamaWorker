@@ -1,4 +1,4 @@
-console.log("Starting Ollama Worker");
+
 const worker = require('./src/worker');
 
 process.on('SIGINT', () => {
@@ -9,6 +9,8 @@ process.on('SIGINT', () => {
 
 
 exports.run = async () => {
+    console.log("Starting Ollama Worker");
+    console.log("Connecting to: " + process.env.SERVER_URL);
     while (true) {
         try{
             
@@ -27,7 +29,7 @@ exports.run = async () => {
         }
         catch(error){
             //console.error('Error processing request:', error);
-            console.log("Failed to connect to server.");
+            console.log("X");
             // try again in 10 seconds
             await worker.sleep(3000);
         }        
